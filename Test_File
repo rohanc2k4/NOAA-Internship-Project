@@ -89,19 +89,19 @@ def doDijkstras():
     
 #Calculates all the edge values for each point
 def calculateEdges():
-    #Nested for loop going through each of the points
-    for i in range (3297):
-        for j in range (4500):
-            #If this is not the last row of cells, the above, diagonal, and right cells are the adjacent cells, else, only the above cell is adjacent
-            if(j < 4499 and i < 3296):
-                dict = {(i+1, j) : calculateCost(i, j, i+1, j), (i+1, j+1) : calculateCost(i, j, i+1, j+1), (i, j+1) : calculateCost(i, j, i, j+1)}
-                adjacentEdges[(i, j)] = dict
-            elif(i == 3296 and j < 4499):
-                dict = {(i, j+1) : calculateCost(i, j, i, j+1), (i-1, j) : calculateCost(i-1, j, i, j), (i-1, j+1) : calculateCost(i-1, j, i, j+1)}
-                adjacentEdges[(i, j)] = dict
-            else:
-                dict = {(i+1, j) : calculateCost(i, j, i+1, j)}
-                adjacentEdges[(i, j)] = dict
+    #Nested for loop going through each of the non-end points
+    for i in range (3296):
+        for j in range (4499):
+            adjacentEdges[(i, j)] = {(i+1, j) : calculateCost(i, j, i+1, j), (i+1, j+1) : calculateCost(i, j, i+1, j+1), (i, j+1) : calculateCost(i, j, i, j+1)}    
+    #Nested for loop going through y coordinate end point
+    for i in range(3296, 3297):
+        for j in range(4499):
+            adjacentEdges[(i, j)] = {(i, j+1) : calculateCost(i, j, i, j+1), (i-1, j) : calculateCost(i-1, j, i, j), (i-1, j+1) : calculateCost(i-1, j, i, j+1)}
+    #Nested for loop going through x coordinate end point
+    for i in range(3296):
+        for j in range(4499, 4500):
+            adjacentEdges[(i, j)] = {(i+1, j) : calculateCost(i, j, i+1, j)}
+           
 #Calculates the cost of an edge between two points by the formula: distance + (distance * ice area)
 def calculateCost(i1, j1, i2, j2):
     distance = calculate_distance(ma.getdata(latitude[i1, 0]), ma.getdata(longitude[0, j1]), ma.getdata(latitude[i2, 0]), ma.getdata(longitude[0, j2]))
