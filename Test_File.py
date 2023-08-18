@@ -20,6 +20,7 @@ aice = ds.variables["aice"][0,:,:]
 hi = ds.variables["hi"][0,:,:]
 nj = len(ds.dimensions["nj"])
 ni = len(ds.dimensions["ni"])
+#f = open('/Users/rohanchawla/Desktop/readme.txt', 'w')
 #faster (~50 seconds) to used masked arrays than doubly nested loop (250 seconds)
 lmask = ma.masked_array(lons > 2.*360.+180.)
 lin = lmask.nonzero()
@@ -48,7 +49,7 @@ for k in range(0, len(lin[0])):
     j = lin[0][k]
     lons[j,i] += 1.*360.
 def main():
-
+    #Uses the user's input to find the polar class of the ship
     PC = int(input("What is the polar class of the ship vessel? (1-7)\n"))
     PossAnswers = [1, 2, 3, 4, 5, 6, 7]
     if(PC not in PossAnswers):
@@ -63,7 +64,9 @@ def main():
     plot1.add_xlabel(xlabel='longitude')
     plot1.add_ylabel(ylabel='latitude')
     
-
+    #Sets the limit of the graph's longitude and latitude values
+    plot1.set_xlim(-180, 0)
+    plot1.set_ylim(30, 90)
     fig = CreateFigure()
     fig.plot_list = [plot1]
     fig.create_figure()
@@ -113,6 +116,7 @@ def main():
     print("Done adding nodes, k=",k, flush=True)
     #print(G.nodes(data=True))
     distance = 0
+    #For loop that goes through every cell value and sets an edge cost of each edge based on the calculateCost function
     for k in range(0, len(xin[0])):
         i = xin[1][k]
         j = xin[0][k]
@@ -126,49 +130,57 @@ def main():
 
         if (im >= 0):
             if (nodemap[j,im] != -1):
-               G.add_edge(n, nodemap[j,im], weight = calculateCost(PC, G.nodes[nodemap[j,im]]["aice"], (G.nodes[nodemap[j,im]]["hi"]*100)))
+               G.add_edge(n, nodemap[j,im], weight = calculateCost(G.nodes[n], G.nodes[nodemap[j, im]], PC))
 
         if (ip < ni):
             if (nodemap[j,ip] != -1):
-                G.add_edge(n, nodemap[j,im], weight = calculateCost(PC, G.nodes[nodemap[j,ip]]["aice"], (G.nodes[nodemap[j,ip]]["hi"]*100)))
+                G.add_edge(n, nodemap[j,ip], weight = calculateCost(G.nodes[n], G.nodes[nodemap[j, ip]], PC))
+
         if (jp < nj ):
             if (nodemap[jp,i] != -1):
-                G.add_edge(n, nodemap[jp,i], weight = calculateCost(PC, G.nodes[nodemap[jp,i]]["aice"], (G.nodes[nodemap[jp,i]]["hi"]*100)))
+                G.add_edge(n, nodemap[jp,i], weight = calculateCost(G.nodes[n], G.nodes[nodemap[jp, i]], PC))
+
             if (im >= 0):
                 if (nodemap[jp,im] != -1):
-                    G.add_edge(n, nodemap[jp,im], weight = calculateCost(PC, G.nodes[nodemap[jp,im]]["aice"], (G.nodes[nodemap[jp,im]]["hi"]*100)))
+                    G.add_edge(n, nodemap[jp,im], weight = calculateCost(G.nodes[n], G.nodes[nodemap[jp, im]], PC))
+                    
             if (ip < ni):
                 if (nodemap[jp,ip] != -1):
-                    G.add_edge(n, nodemap[jp,ip], weight = calculateCost(PC, G.nodes[nodemap[jp,ip]]["aice"], (G.nodes[nodemap[jp,ip]]["hi"]*100)))
+                    G.add_edge(n, nodemap[jp,ip], weight = calculateCost(G.nodes[n], G.nodes[nodemap[jp, ip]], PC))
+                    
   #RG: a guess about the archipelago seam
         else:
             tmpi = i
             if (i < ni/2-1):
                 tmpi = ni - 1 - i
             if (nodemap[j,tmpi] != -1):
-                G.add_edge(n, nodemap[j,tmpi], weight = calculateCost(PC, G.nodes[nodemap[j,tmpi]]["aice"], (G.nodes[nodemap[j,tmpi]]["hi"]*100)))
+                G.add_edge(n, nodemap[j,tmpi], weight = calculateCost(G.nodes[n], G.nodes[nodemap[j, tmpi]], PC))
+                
         if (jm >= 0 ):
             if (nodemap[jm,i] != -1):
-                G.add_edge(n, nodemap[jm,i], weight = calculateCost(PC, G.nodes[nodemap[jm,i]]["aice"], (G.nodes[nodemap[jm,i]]["hi"]*100)))
+                G.add_edge(n, nodemap[jm,i], weight = calculateCost(G.nodes[n], G.nodes[nodemap[jm, i]], PC))
+                
             if (im >= 0):
                 if (nodemap[jm,im] != -1):
-                    G.add_edge(n, nodemap[jm,im], weight = calculateCost(PC, G.nodes[nodemap[jm,im]]["aice"], (G.nodes[nodemap[jm,im]]["hi"]*100)))
+                    G.add_edge(n, nodemap[jm,im], weight = calculateCost(G.nodes[n], G.nodes[nodemap[jm, im]], PC))
+                    
             if (ip < ni):
                 if (nodemap[jm,ip] != -1):
-                    G.add_edge(n, nodemap[jm,ip], weight = calculateCost(PC, G.nodes[nodemap[jm,ip]]["aice"], (G.nodes[nodemap[jm,ip]]["hi"]*100)))
-
+                    G.add_edge(n, nodemap[jm,ip], weight = calculateCost(G.nodes[n], G.nodes[nodemap[jm, ip]], PC))
+                    
     print("Have constructed graph, number of edges =",k, len(G.edges), flush=True)
     
+    #Creates a dijkstra_path from the start node to the end node
     FoundPath = nx.dijkstra_path(G, nodemap[beringnj, beringni], nodemap[baffinnj, baffinni])
     lonVals = []
     latVals = []
+    for i in range (0, len(FoundPath)):
+        print(G.nodes[FoundPath[i]])
     
+    #Finds the distance of all the nodes and adds them together, puts all the latitude values and longitude values in a list to be plotted
     for i in range (0, len(FoundPath)):
         if(i != len(FoundPath)-1):
             distance += calculate_distance(G.nodes[FoundPath[i]]['lat'], G.nodes[FoundPath[i]]['lon'], G.nodes[FoundPath[i+1]]['lat'], G.nodes[FoundPath[i+1]]['lon'])
-        #print(FoundPath[i])
-        #print(G.nodes[FoundPath[i]]["lon"])
-        #print(G.nodes[FoundPath[i]]["lat"])
         lonVals.append(G.nodes[FoundPath[i]]['lon'])
         latVals.append(G.nodes[FoundPath[i]]['lat'])
 
@@ -206,38 +218,44 @@ def find(lons, lats, lonin, latin):
   #print("dmin:",imin, jmin, dmin, dxmin, dymin)
   return (jmin,imin)
 
-def calculateCost(PolarClass, iceCon, iceThick):
+#Calculate Cost function that takes in the ice concentration, ice thickness, polar class, and distance
+#and outputs a cost from the current node to the next node based off of inputs
+def calculateCost(currNode, nextNode, PolarClass):
     #RIO = (aice*10)RV
     #If aice <= .1, return 0
     #If RIO < 0, return 99999
-    cost = 0
+    iceCon = currNode["aice"]
+    iceThick = nextNode["hi"] * 100
+    cost = calculate_distance(currNode["lat"], currNode["lon"], nextNode["lat"], nextNode["lon"])
     #Considered Ice-Free
     if(iceCon <= .1):
-        return 0
-    
+        return cost
+    #Costs are defined based off of the ice thickness that each ship can handle signified by its Polar Class
     if(PolarClass == 1 or PolarClass == 2 or PolarClass == 3 or PolarClass == 4):
         if(iceThick <= 70):
-            cost = 3*(iceCon * 10)
+            cost = cost + (2 * (iceCon * 10))
         elif(iceThick <= 120):
-            cost = 2*(iceCon * 10)
+            cost = cost + (4 * (iceCon * 10))
         else:
-            cost = (iceCon * 10)
+            cost = cost + (6 * (iceCon * 10))
+
     elif(PolarClass == 5 or PolarClass == 6):
         if(iceThick <= 70):
-            cost = 3*(iceCon * 10)
+            cost = cost + (2 * (iceCon * 10))
         elif(iceThick <= 95):
-            cost = 2*(iceCon * 10)
+            cost = cost + (4 * (iceCon * 10))
         elif(iceThick <= 120):
-            cost = iceCon*10
+            cost = cost + (6 * iceCon * 10)
         else:
             return 999
+        
     else:
         if(iceThick <= 30):
-            cost = 3*(iceCon * 10)
+            cost = cost + (2 * (iceCon * 10))
         elif(iceThick <= 50):
-            cost = 2*(iceCon * 10)
+            cost = cost + (4 * (iceCon * 10))
         elif(iceThick <= 70):
-            cost = iceCon*10
+            cost = cost + (6 * (iceCon * 10))
         else:
             return 999
     return cost
